@@ -42,8 +42,14 @@ public class Node {
 	
 	//Subject to change
 	public void updateFingerTable(Node s, int i){
+		/*
+		I dont think this is correct because the list might not be in order
+		so j < i probably wont work correctly. Might need to switch to some sort of
+		sorted array list or rethink how I am doing this.
+		*/
 		for(int j = this.nodeID; j < i; j++){
 			if(s.getID() == this.fingertable.get(j).getID()){
+				//Does this give me a pointer to this node or just a copy of it?
 				Node p = this.fingertable.get(j);
 				p = s;
 				p.updateFingerTable(s, i);
