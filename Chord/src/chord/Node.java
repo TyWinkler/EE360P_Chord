@@ -38,7 +38,7 @@ public class Node {
 	public void updateOthers(){
 		for(int i = 1; i < fingertable.size(); i++){
 			//find last node p whose ith finger might be n
-			Node p = findPredecessor(this.nodeID - (int)Math.pow(2, (i-1)));
+			Node p = find_predecessor(this.nodeID - (int)Math.pow(2, (i-1)));
 			p.updateFingerTable(this,i);
 		}
 	}
@@ -79,7 +79,7 @@ public class Node {
 	 * Assuming m = 4
 	 */
 	public void fix_fingers() {
-		int i = new Random().nextInt(fingertable.size()) + 1;
+		int i = new Random().nextInt(fingertable.size() - 1) + 1;
 		Node n = fingertable.get(i);
 		n = find_successor((nodeID + Math.pow(2 , i - 1)) % 16);
 		fingertable.set(i, n);
