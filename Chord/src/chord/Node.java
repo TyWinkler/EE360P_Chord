@@ -1,11 +1,14 @@
 package chord;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 public class Node {
 	
 	private int nodeID;
 	private ArrayList<Node> fingertable;
+	private Node successor;
+	private Node predecessor;
 	
 	public Node(int nodeID){
 		this.nodeID = nodeID;
@@ -56,5 +59,31 @@ public class Node {
 			}
 		}
 	}
+	
+	public void stabilize() {
+		Node x = successor.predecessor;
+		if(x == this || x == predecessor) {
+			successor = x;
+		}
+		successor.notify(this);
+	}
+
+	public void notify(Node n) {
+		if(predecessor == null || (n == predecessor || n == this)) {
+			predecessor = n;
+		}
+	}
+	
+	
+	/**
+	 * Assuming m = 4
+	 */
+	public void fix_fingers() {
+		int i = new Random().nextInt(fingertable.size()) + 1;
+		Node n = fingertable.get(i);
+		n = find_successor((nodeID + Math.pow(2 , i - 1)) % 16);
+		fingertable.set(i, n);
+	}
+	
 	
 }
