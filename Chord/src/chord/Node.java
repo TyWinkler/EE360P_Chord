@@ -7,10 +7,12 @@ public class Node {
 	
 	private int nodeID;
 	private ArrayList<Node> fingertable;
+	private IP ipAddress;
 	private Node successor;
 	private Node predecessor;
 	
-	public Node(int nodeID){
+	public Node(int nodeID, int ipAddress, int port){
+		this.ipAddress = new IP(ipAddress, port);
 		this.nodeID = nodeID;
 	}
 
@@ -28,6 +30,10 @@ public class Node {
 	@Override
 	public String toString(){
 		return Integer.toString(this.nodeID);
+	}
+	
+	public IP getIP(){
+		return this.ipAddress;
 	}
 	
 	public int getID(){
