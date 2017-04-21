@@ -22,7 +22,7 @@ public class Chord {
 	
 	
 	public void run() {
-		Node node = new Node(1,ipAddress,port);
+		Node node = new Node(ipAddress,port);
 		System.out.println("Node: " + Integer.toString(node.getID()) + " created with ip: " + node.getIP().toString());
 		Scanner sc = new Scanner(System.in);
 	    while(sc.hasNextLine()) {

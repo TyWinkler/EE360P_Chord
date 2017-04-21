@@ -11,9 +11,9 @@ public class Node {
 	private Node successor;
 	private Node predecessor;
 	
-	public Node(int nodeID, String ipAddress, int port){
+	public Node(String ipAddress, int port){
 		this.ipAddress = new IP(ipAddress, port);
-		this.nodeID = nodeID;
+		this.nodeID = this.ipAddress.hashCode();
 	}
 
 	@Override
