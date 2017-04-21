@@ -2,20 +2,20 @@ package chord;
 
 public class IP {
 
-	private int ipAddress;
+	private String ipAddress;
 	private int port;
 	
-	public IP (int ipAddress, int port){
+	public IP (String ipAddress, int port){
 		this.ipAddress = ipAddress;
 		this.port = port;
 	}
 	
 	@Override
 	public String toString(){
-		return Integer.toString(this.ipAddress) + ":" + Integer.toString(this.port);
+		return this.ipAddress + ":" + Integer.toString(this.port);
 	}
 	
-	public int setIP(int ip){
+	public String setIP(String ip){
 		return this.ipAddress = ip;
 	}
 	
@@ -23,7 +23,7 @@ public class IP {
 		return this.port = port;
 	}
 	
-	public int getIP(){
+	public String getIP(){
 		return this.ipAddress;
 	}
 	

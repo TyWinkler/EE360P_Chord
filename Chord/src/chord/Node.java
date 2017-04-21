@@ -11,7 +11,7 @@ public class Node {
 	private Node successor;
 	private Node predecessor;
 	
-	public Node(int nodeID, int ipAddress, int port){
+	public Node(int nodeID, String ipAddress, int port){
 		this.ipAddress = new IP(ipAddress, port);
 		this.nodeID = nodeID;
 	}
@@ -44,8 +44,8 @@ public class Node {
 	public void updateOthers(){
 		for(int i = 1; i < fingertable.size(); i++){
 			//find last node p whose ith finger might be n
-			Node p = find_predecessor(this.nodeID - (int)Math.pow(2, (i-1)));
-			p.updateFingerTable(this,i);
+			//Node p = find_predecessor(this.nodeID - (int)Math.pow(2, (i-1)));
+			//p.updateFingerTable(this,i);
 		}
 	}
 	
@@ -87,7 +87,7 @@ public class Node {
 	public void fix_fingers() {
 		int i = new Random().nextInt(fingertable.size() - 1) + 1;
 		Node n = fingertable.get(i);
-		n = find_successor((nodeID + Math.pow(2 , i - 1)) % 16);
+		//n = find_successor((nodeID + Math.pow(2 , i - 1)) % 16);
 		fingertable.set(i, n);
 	}
 	
