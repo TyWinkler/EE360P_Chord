@@ -5,6 +5,7 @@ import java.util.Random;
 
 public class Node {
 	
+	private Hasher hasher = new Hasher();
 	private int nodeID;
 	private ArrayList<Node> fingertable;
 	private IP ipAddress;
