@@ -14,7 +14,7 @@ public class Node implements NodeRMIInterface{
 	private IP ipAddress;
 	private int successor = -1;
 	private int predecessor = -1;
-	private int m = 12;
+	public final int m = 12;
 	private HashMap<Integer, String> map;
 	
 	
@@ -52,6 +52,10 @@ public class Node implements NodeRMIInterface{
 	public void setSuccessor(int i){
 		this.successor = i;
 	}
+	
+	public void setPredecessor(int i){
+		this.predecessor = i;
+	}
 
 	public HashMap<Integer, String> getMap() {
 		return map;
@@ -86,7 +90,12 @@ public class Node implements NodeRMIInterface{
 		return finger;
 	}
 	
-	public void stabilize() {
+	public void join(int node){
+		Node n = getNode(node);
+		this.successor = n.find_successor(this.getID()).getID();
+	}
+	
+	public synchronized void stabilize() {
 		Node successorNode = getNode(successor);
 		Node x = getNode(successorNode.getPredecessor());
 		int xID = x.getID();
@@ -96,7 +105,7 @@ public class Node implements NodeRMIInterface{
 		x.notify(this);
 	}
 
-	public void notify(Node n) {
+	public synchronized void notify(Node n) {
 		int nID = n.getID();
 		if(predecessor == -1 || (nID > predecessor && nID < this.getID())) {
 			predecessor = nID;
@@ -104,13 +113,13 @@ public class Node implements NodeRMIInterface{
 	}
 	
 	
-	public void fix_fingers() {
+	public synchronized void fix_fingers() {
 		int i = new Random().nextInt(m) + 1;
 		finger[i].node = find_successor(finger[i].start).getID();
 	}
 	
 	
-	public Node find_successor(int id) {
+	public synchronized Node find_successor(int id) {
 		return getNode(find_predecessor(id).getSuccessor());
 	}
 	

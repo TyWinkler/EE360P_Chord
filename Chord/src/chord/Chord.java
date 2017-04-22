@@ -13,6 +13,8 @@ public class Chord {
 	String ipAddress;
 	@Parameter(names={"--port", "-p"})
 	int port;
+	@Parameter(names={"--new", "-n"})
+	int firstPort;
 
 	/**
 	 * @param args
@@ -39,7 +41,18 @@ public class Chord {
             e.printStackTrace();
         }
 		
-		node.setSuccessor(node.find_successor(node.getID()).getID());
+		if(port != firstPort){
+			node.join(port);
+		} else {
+			node.setSuccessor(node.getID());
+			node.setPredecessor(node.getID());
+			Finger[] table = node.getFingerTable();
+			for(int i = 1; i <= node.m; i ++) {
+				Finger f = table[i];
+				f.node = node.getID();
+				table[i] = f;
+			}
+		}
 		
 		Thread stablizer = new Stablizer(node);
 		stablizer.start();
