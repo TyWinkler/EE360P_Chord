@@ -1,5 +1,6 @@
 package chord;
 
+
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.HashMap;
@@ -28,7 +29,6 @@ public class Node implements NodeRMIInterface{
 	}
 	
 	public Node(){
-		map = new HashMap<Integer, String>();
 	}
 
 	@Override
@@ -45,6 +45,10 @@ public class Node implements NodeRMIInterface{
 	@Override
 	public String toString(){
 		return Integer.toString(nodeID);
+	}
+
+	public HashMap<Integer, String> getMap() {
+		return map;
 	}
 	
 	public IP getIP(){
@@ -64,6 +68,15 @@ public class Node implements NodeRMIInterface{
 	}
 	
 	public Finger[] getFingerTable() {
+		/*FingerTableRMI table;
+		try {
+			table = new FingerTableRMI();
+			table.setTable(finger);
+			return table;
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}*/
 		return finger;
 	}
 	
@@ -141,12 +154,21 @@ public class Node implements NodeRMIInterface{
 	}
 	
 	
+	public int[] getArray(){
+		return new int[3];
+	}
+	
 	public static Node getNode(int id) {
 		try {
             Registry registry = LocateRegistry.getRegistry("localhost",id);
             NodeRMIInterface stub = (NodeRMIInterface) registry.lookup(Integer.toString(id));
             Node n = new Node();
-            return (Node) stub;
+            n.finger = stub.getFingerTable();
+            n.predecessor = stub.getPredecessor();
+            n.successor = stub.getSuccessor();
+            n.nodeID = stub.getID();
+            n.map = stub.getMap();
+            return  n;
         } catch (Exception e) {
             System.err.println("Client exception: " + e.toString());
             e.printStackTrace();

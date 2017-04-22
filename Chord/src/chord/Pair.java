@@ -1,6 +1,12 @@
 package chord;
 
-public class Pair {
+import java.io.Serializable;
+
+public class Pair implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -5965260089628068384L;
 	int start;
 	int end;
 	
