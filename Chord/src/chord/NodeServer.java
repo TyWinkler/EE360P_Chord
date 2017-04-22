@@ -18,10 +18,10 @@ public class NodeServer extends Thread implements NodeRMIInterface{
             NodeRMIInterface stub = (NodeRMIInterface) UnicastRemoteObject.exportObject(obj, 5000);
 
             // Bind the remote object's stub in the registry
-            Registry registry = LocateRegistry.getRegistry();
-            registry.bind("Hello", stub);
+            Registry registry = LocateRegistry.getRegistry("localhost",5000);
+            registry.bind("NodeRMIInterface", stub);
 
-            System.err.println("Server ready");
+            System.out.println("Server ready");
         } catch (Exception e) {
             System.err.println("Server exception: " + e.toString());
             e.printStackTrace();

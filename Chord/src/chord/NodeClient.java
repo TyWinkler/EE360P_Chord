@@ -11,7 +11,7 @@ public class NodeClient extends Thread{
 		int host = 5000;
         try {
             Registry registry = LocateRegistry.getRegistry("localhost",host);
-            NodeRMIInterface stub = (NodeRMIInterface) registry.lookup("Hello");
+            NodeRMIInterface stub = (NodeRMIInterface) registry.lookup("NodeRMIInterface");
             String response = stub.hello();
             System.out.println("response: " + response);
         } catch (Exception e) {

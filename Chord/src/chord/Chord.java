@@ -32,6 +32,12 @@ public class Chord {
 	    Thread nodeServer = new NodeServer();
 	    Thread nodeClient = new NodeClient();
 	    nodeServer.start();
+	    try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	    nodeClient.start();
 	    
 //		Scanner sc = new Scanner(System.in);
