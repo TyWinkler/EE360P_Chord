@@ -29,9 +29,9 @@ public class Chord {
 			String cmd = sc.nextLine();
 			String[] tokens = cmd.split(" ");
 			if (tokens[0].equals("get")) {
-			
+				//node.get();
 			} else if (tokens[0].equals("put")) {
-				  
+				//node.put();
 			}
 	    }
 	    sc.close();
