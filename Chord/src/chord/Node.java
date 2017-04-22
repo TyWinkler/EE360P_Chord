@@ -1,10 +1,12 @@
 package chord;
 
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.util.HashMap;
 import java.util.Random;
 
 
-public class Node {
+public class Node implements NodeRMIInterface{
 
 	private int nodeID;
 	private Finger finger[];
@@ -136,7 +138,27 @@ public class Node {
 	
 	
 	public static Node getNode(int id) {
-		return new Node("tst",100);
+		try {
+            Registry registry = LocateRegistry.getRegistry("localhost",id);
+            NodeRMIInterface stub = (NodeRMIInterface) registry.lookup(Integer.toString(id));
+            return (Node) stub;
+        } catch (Exception e) {
+            System.err.println("Client exception: " + e.toString());
+            e.printStackTrace();
+        }
+		return null;
+	}
+	
+	public static int getNode2(int id) {
+		try {
+            Registry registry = LocateRegistry.getRegistry("localhost",id);
+            NodeRMIInterface stub = (NodeRMIInterface) registry.lookup(Integer.toString(id));
+            return stub.getPredecessor();
+        } catch (Exception e) {
+            System.err.println("Client exception: " + e.toString());
+            e.printStackTrace();
+        }
+		return -1;
 	}
 	
 }
