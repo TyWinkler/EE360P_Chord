@@ -8,9 +8,9 @@ public class NodeClient extends Thread{
 	NodeClient() { }
 	
 	public void run(){
-		String host = null;
+		int host = 5000;
         try {
-            Registry registry = LocateRegistry.getRegistry(host);
+            Registry registry = LocateRegistry.getRegistry("localhost",host);
             NodeRMIInterface stub = (NodeRMIInterface) registry.lookup("Hello");
             String response = stub.hello();
             System.out.println("response: " + response);

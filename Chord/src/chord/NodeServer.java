@@ -15,7 +15,7 @@ public class NodeServer extends Thread implements NodeRMIInterface{
 	public void run(){
 		try {
             NodeServer obj = new NodeServer();
-            NodeRMIInterface stub = (NodeRMIInterface) UnicastRemoteObject.exportObject(obj, 0);
+            NodeRMIInterface stub = (NodeRMIInterface) UnicastRemoteObject.exportObject(obj, 5000);
 
             // Bind the remote object's stub in the registry
             Registry registry = LocateRegistry.getRegistry();
