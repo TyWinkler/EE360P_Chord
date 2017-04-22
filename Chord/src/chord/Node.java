@@ -1,6 +1,6 @@
 package chord;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 
 
@@ -12,6 +12,7 @@ public class Node {
 	private int successor = -1;
 	private int predecessor = -1;
 	private int m = 12;
+	private HashMap<Integer, String> map;
 	
 	
 	public Node(String ipAddress, int port){
@@ -21,6 +22,7 @@ public class Node {
 		for(int i = 1; i < m + 1; i++) {
 			finger[i] = new Finger(m, nodeID, i);
 		}
+		map = new HashMap<Integer, String>();
 	}
 
 	@Override
@@ -98,13 +100,38 @@ public class Node {
 	public Node closest_preceding_finger(int id) {
 		for( int i = m; i >= 1; i --) {
 			if(finger[i].node == -1) {
-				continue;
+				finger[i].node = find_successor(finger[i].start).getID();
 			}
 			if(finger[i].node > this.getID() &&  finger[i].node < id) {
 				return getNode(finger[i].node);
 			}
 		}
 		return this;
+	}
+	
+	public Node find(int keyID) {
+		return find_successor(keyID);
+		
+	}
+	
+	public String getValue(int keyID){
+		return map.get(keyID);
+	}
+	
+	public String putValue(int keyID, String value){
+		return map.put(keyID, value);
+	}
+	
+	public String get(String key) {
+		int keyID = (int) (Integer.parseInt((Hasher.hash(key)).substring(0, 8),16) % Math.pow(2, m));
+		Node n = find(keyID);
+		return n.getValue(keyID);
+	}
+	
+	public String put(String key, String value) {
+		int keyID = (int) (Integer.parseInt((Hasher.hash(key)).substring(0, 8),16) % Math.pow(2, m));
+		Node n = find(keyID);
+		return n.putValue(keyID, value);
 	}
 	
 	
