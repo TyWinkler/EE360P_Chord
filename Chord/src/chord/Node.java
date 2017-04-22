@@ -6,7 +6,7 @@ import java.util.Random;
 public class Node {
 	
 	private Hasher hasher = new Hasher();
-	private int nodeID;
+	private String nodeID;
 	private ArrayList<Node> fingertable;
 	private IP ipAddress;
 	private Node successor;
@@ -14,7 +14,7 @@ public class Node {
 	
 	public Node(String ipAddress, int port){
 		this.ipAddress = new IP(ipAddress, port);
-		this.nodeID = this.ipAddress.hashCode();
+		this.nodeID = this.ipAddress.hash();
 	}
 
 	@Override
@@ -30,15 +30,15 @@ public class Node {
 	
 	@Override
 	public String toString(){
-		return Integer.toString(this.nodeID);
+		return nodeID;
 	}
 	
 	public IP getIP(){
 		return this.ipAddress;
 	}
 	
-	public int getID(){
-		return this.nodeID;
+	public String getID(){
+		return nodeID;
 	}
 	
 	//Subject to change
@@ -57,14 +57,14 @@ public class Node {
 		so j < i probably wont work correctly. Might need to switch to some sort of
 		sorted array list or rethink how I am doing this.
 		*/
-		for(int j = this.nodeID; j < i; j++){
-			if(s.getID() == this.fingertable.get(j).getID()){
-				//Does this give me a pointer to this node or just a copy of it?
-				Node p = this.fingertable.get(j);
-				p = s;
-				p.updateFingerTable(s, i);
-			}
-		}
+//		for(int j = this.nodeID; j < i; j++){
+//			if(s.getID() == this.fingertable.get(j).getID()){
+//				//Does this give me a pointer to this node or just a copy of it?
+//				Node p = this.fingertable.get(j);
+//				p = s;
+//				p.updateFingerTable(s, i);
+//			}
+//		}
 	}
 	
 	public void stabilize() {
