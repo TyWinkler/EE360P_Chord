@@ -5,7 +5,6 @@ import java.util.Random;
 
 public class Node {
 	
-	private Hasher hasher = new Hasher();
 	private String nodeID;
 	private ArrayList<Node> fingertable;
 	private IP ipAddress;
@@ -45,18 +44,13 @@ public class Node {
 	public void updateOthers(){
 		for(int i = 1; i < fingertable.size(); i++){
 			//find last node p whose ith finger might be n
-			//Node p = find_predecessor(this.nodeID - (int)Math.pow(2, (i-1)));
-			//p.updateFingerTable(this,i);
+//			Node p = find_predecessor(this.nodeID - (int)Math.pow(2, (i-1)));
+//			p.updateFingerTable(this,i);
 		}
 	}
 	
 	//Subject to change
 	public void updateFingerTable(Node s, int i){
-		/*
-		I dont think this is correct because the list might not be in order
-		so j < i probably wont work correctly. Might need to switch to some sort of
-		sorted array list or rethink how I am doing this.
-		*/
 //		for(int j = this.nodeID; j < i; j++){
 //			if(s.getID() == this.fingertable.get(j).getID()){
 //				//Does this give me a pointer to this node or just a copy of it?
@@ -65,6 +59,7 @@ public class Node {
 //				p.updateFingerTable(s, i);
 //			}
 //		}
+
 	}
 	
 	public void stabilize() {
