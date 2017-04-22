@@ -1,7 +1,5 @@
 package chord;
 
-import org.apache.commons.codec.digest.DigestUtils;
-
 public class IP {
 
 	private String ipAddress;
@@ -13,7 +11,7 @@ public class IP {
 	}
 	
 	public String hash() {
-		return DigestUtils.sha1Hex(Integer.toString(port));
+		return Hasher.hash(Integer.toString(port));
 	}
 	
 	@Override
