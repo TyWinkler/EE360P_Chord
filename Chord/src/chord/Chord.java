@@ -1,8 +1,10 @@
 package chord;
 
+import java.io.FileNotFoundException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Scanner;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -36,11 +38,27 @@ public class Chord {
             // Bind the remote object's stub in the registry
             Registry registry = LocateRegistry.createRegistry(port);
             registry.bind(Integer.toString(port), stub);
-            System.err.println("Server ready");
+            System.out.println("Server ready");
         } catch (Exception e) {
-            System.err.println("Server exception: " + e.toString());
+            System.out.println("Server exception: " + e.toString());
             e.printStackTrace();
         }
+		
+		Scanner sc = new Scanner (System.in);
+		while(sc.hasNextLine()) {
+	        String cmd = sc.nextLine();
+	        String[] tokens = cmd.split(" ");
+	        if(tokens[0].equals("get")){
+	        	
+	        } else if(tokens[0].equals("put")){
+	        	
+	        } else if(tokens[0].equals("quit")){
+	        	break;
+	        } else {
+	        	System.err.println("Unrecognized Command");
+	        }
+	    }
+		sc.close();
 
 	}
 	
