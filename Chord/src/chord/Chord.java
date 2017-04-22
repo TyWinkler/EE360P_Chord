@@ -1,6 +1,5 @@
 package chord;
 
-import java.io.FileNotFoundException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
@@ -49,7 +48,9 @@ public class Chord {
 	        String cmd = sc.nextLine();
 	        String[] tokens = cmd.split(" ");
 	        if(tokens[0].equals("get")){
-	        	
+	        	if(tokens[1] != null){
+	        		System.out.println(node.getNode(Integer.parseInt(tokens[1])).toString());
+	        	}
 	        } else if(tokens[0].equals("put")){
 	        	
 	        } else if(tokens[0].equals("quit")){
