@@ -23,13 +23,9 @@ public class Chord {
 	    main.run();
 	}
 	
-	
-	
-	
 	public void run() {
 		Node node = new Node(ipAddress,port);
 		System.out.println("Node: " + node.getID() + " created with ip: " + node.getIP().toString());
-
 		
 		try {
             NodeRMIInterface stub = (NodeRMIInterface) UnicastRemoteObject.exportObject(node, port);
@@ -43,16 +39,36 @@ public class Chord {
             e.printStackTrace();
         }
 		
+		node.setSuccessor(node.find_successor(node.getID()).getID());
+		
+		Thread stablizer = new Stablizer(node);
+		stablizer.start();
+		
+		Thread fingerer = new Fingerer(node);
+		fingerer.start();
+		
 		Scanner sc = new Scanner (System.in);
 		while(sc.hasNextLine()) {
 	        String cmd = sc.nextLine();
 	        String[] tokens = cmd.split(" ");
-	        if(tokens[0].equals("get")){
+	        if(tokens[0].equals("getNode")){
 	        	if(tokens[1] != null){
 	        		System.out.println(node.getNode(Integer.parseInt(tokens[1])).toString());
-	        	}
+	        	} else {
+		        	System.err.println("Unrecognized Command");
+		        }
 	        } else if(tokens[0].equals("put")){
-	        	
+	        	if(tokens[1] != null && tokens[2] != null){
+	        		node.put(tokens[1],tokens[2]);
+	        	} else {
+		        	System.err.println("Unrecognized Command");
+		        }
+	        } else if(tokens[0].equals("get")){
+	        	if(tokens[1] != null){
+	        		System.out.println(node.get(tokens[1]));
+	        	} else {
+		        	System.err.println("Unrecognized Command");
+		        }
 	        } else if(tokens[0].equals("quit")){
 	        	break;
 	        } else {

@@ -26,6 +26,8 @@ public class Node implements NodeRMIInterface{
 			finger[i] = new Finger(m, nodeID, i);
 		}
 		map = new HashMap<Integer, String>();
+		this.successor = nodeID;
+
 	}
 	
 	public Node(){
@@ -45,6 +47,10 @@ public class Node implements NodeRMIInterface{
 	@Override
 	public String toString(){
 		return Integer.toString(nodeID);
+	}
+	
+	public void setSuccessor(int i){
+		this.successor = i;
 	}
 
 	public HashMap<Integer, String> getMap() {
@@ -121,7 +127,7 @@ public class Node implements NodeRMIInterface{
 			if(finger[i].node == -1) {
 				finger[i].node = find_successor(finger[i].start).getID();
 			}
-			if(finger[i].node > this.getID() &&  finger[i].node < id) {
+			if(finger[i].node > this.getID() &&  finger[i].node < id && i >= 0) {
 				return getNode(finger[i].node);
 			}
 		}
@@ -142,13 +148,13 @@ public class Node implements NodeRMIInterface{
 	}
 	
 	public String get(String key) {
-		int keyID = (int) (Integer.parseInt((Hasher.hash(key)).substring(0, 8),16) % Math.pow(2, m));
+		int keyID = (int) (Long.parseLong((Hasher.hash(key)).substring(0, 8),16) % Math.pow(2, m));
 		Node n = find(keyID);
 		return n.getValue(keyID);
 	}
 	
 	public String put(String key, String value) {
-		int keyID = (int) (Integer.parseInt((Hasher.hash(key)).substring(0, 8),16) % Math.pow(2, m));
+		int keyID = (int) (Long.parseLong((Hasher.hash(key)).substring(0, 8),16) % Math.pow(2, m));
 		Node n = find(keyID);
 		return n.putValue(keyID, value);
 	}
@@ -158,7 +164,10 @@ public class Node implements NodeRMIInterface{
 		return new int[3];
 	}
 	
-	public static Node getNode(int id) {
+	public Node getNode(int id) {
+		if(id == nodeID || id == -1) {
+			return this;
+		}
 		try {
             Registry registry = LocateRegistry.getRegistry("localhost",id);
             NodeRMIInterface stub = (NodeRMIInterface) registry.lookup(Integer.toString(id));
