@@ -23,7 +23,7 @@ public class Chord {
 	
 	public void run() {
 		Node node = new Node(ipAddress,port);
-		System.out.println("Node: " + Integer.toString(node.getID()) + " created with ip: " + node.getIP().toString());
+		System.out.println("Node: " + node.getID() + " created with ip: " + node.getIP().toString());
 		Scanner sc = new Scanner(System.in);
 	    while(sc.hasNextLine()) {
 			String cmd = sc.nextLine();

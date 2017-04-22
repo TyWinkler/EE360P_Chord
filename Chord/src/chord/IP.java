@@ -10,6 +10,10 @@ public class IP {
 		this.port = port;
 	}
 	
+	public String hash() {
+		return Hasher.hash(Integer.toString(port));
+	}
+	
 	@Override
 	public String toString(){
 		return this.ipAddress + ":" + Integer.toString(this.port);
