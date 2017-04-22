@@ -26,6 +26,10 @@ public class Node implements NodeRMIInterface{
 		}
 		map = new HashMap<Integer, String>();
 	}
+	
+	public Node(){
+		map = new HashMap<Integer, String>();
+	}
 
 	@Override
 	public boolean equals(Object node){
@@ -141,6 +145,7 @@ public class Node implements NodeRMIInterface{
 		try {
             Registry registry = LocateRegistry.getRegistry("localhost",id);
             NodeRMIInterface stub = (NodeRMIInterface) registry.lookup(Integer.toString(id));
+            Node n = new Node();
             return (Node) stub;
         } catch (Exception e) {
             System.err.println("Client exception: " + e.toString());

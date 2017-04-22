@@ -49,6 +49,31 @@ public class Chord {
 
 
 	    
+<<<<<<< HEAD
+=======
+	    Thread nodeServer = new NodeServer();
+	    Thread nodeClient = new NodeClient();
+	    nodeServer.start();
+	    try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	    nodeClient.start();
+	    
+//		Scanner sc = new Scanner(System.in);
+//	    while(sc.hasNextLine()) {
+//			String cmd = sc.nextLine();
+//			String[] tokens = cmd.split(" ");
+//			if (tokens[0].equals("get")) {
+//				//node.get();
+//			} else if (tokens[0].equals("put")) {
+//				//node.put();
+//			}
+//	    }
+//	    sc.close();
+>>>>>>> b83be8a107cd1685cca6cef7498d39c2abdcf92f
 		
 	}
 	
