@@ -1,5 +1,8 @@
 package chord;
 
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.Scanner;
 
 import com.beust.jcommander.JCommander;
@@ -35,6 +38,12 @@ public class Chord {
 			}
 	    }
 	    sc.close();
+	    
+	    Thread nodeServer = new NodeServer();
+	    Thread nodeClient = new NodeClient();
+	    nodeServer.start();
+	    nodeClient.start();
+		
 	}
 	
 }

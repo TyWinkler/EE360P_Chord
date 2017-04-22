@@ -11,7 +11,7 @@ public class IP {
 	}
 	
 	public int hash(int m) {
-		return (int) (Integer.parseInt((Hasher.hash(Integer.toString(port))).substring(0, 8),16) % Math.pow(2, m));
+		return (int) (Long.parseLong((Hasher.hash(Integer.toString(port))).substring(0, 8),16) % Math.pow(2, m));
 	}
 	
 	@Override

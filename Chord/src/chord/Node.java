@@ -136,7 +136,7 @@ public class Node {
 	
 	
 	public static Node getNode(int id) {
-		
+		return new Node("tst",100);
 	}
 	
 }
