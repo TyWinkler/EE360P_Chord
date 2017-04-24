@@ -1,4 +1,4 @@
-package chord;
+package chord_section4;
 
 public class Fingerer extends Thread {
 
