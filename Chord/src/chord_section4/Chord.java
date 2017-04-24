@@ -10,7 +10,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 
 public class Chord {
-	public static final boolean DEBUG = true;
+	public static final boolean DEBUG = false;
 	
 	public final int m = 12;
 	
@@ -124,6 +124,7 @@ public class Chord {
 	public static void debugPrint(String debugMessage){
 		if(Chord.DEBUG){
 			System.out.println(debugMessage);
+			System.out.println("");
 		}
 	}
 	

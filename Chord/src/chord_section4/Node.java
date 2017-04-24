@@ -27,6 +27,8 @@ public class Node implements Serializable{
 		this.ipAddress = new IP(ipAddress, port);
 		this.nodeID = this.ipAddress.hash(m);
 		
+		Chord.debugPrint("node with port " + port + " has ID " + this.nodeID);
+		
 		// initialize finger table's start 
 		// NOTE: the actual node the finger points to, 
 		//       is NOT initialized. This should be done later
@@ -250,6 +252,10 @@ public class Node implements Serializable{
 	 * @throws RemoteException 
 	 */
 	public Node find_predecessor(int id) throws RemoteException {
+		if(this.nodeID == this.getSuccessor().nodeID){
+			return this;
+		}
+		
 		Node nPrime = this;
 		while(nodeIdIsNotAfterLeftBoundAndWithinUpToRightBound(id, nPrime.nodeID, nPrime.getSuccessor().getID())) {
 			nPrime = nPrime.closest_preceding_finger(id);
@@ -266,6 +272,10 @@ public class Node implements Serializable{
 	 * @return true if the finger is not within (leftBound, rightBound]
 	 */
 	private boolean nodeIdIsNotAfterLeftBoundAndWithinUpToRightBound(int id, int leftBound, int rightBound){
+		if(leftBound == rightBound){
+			return false;
+		}
+		
 		boolean afterLeftBound = false;
 		boolean upToRightBound = false;
 		
@@ -340,7 +350,7 @@ public class Node implements Serializable{
 	 * bucket
 	 */
 	public String getValue(int keyID){
-		return map.get(keyID);
+		return map.get(keyID) + " (stored at node with ID  " + this.nodeID + " and port " + this.ipAddress.getPort() + ")";
 	}
 	
 	/**
@@ -359,8 +369,14 @@ public class Node implements Serializable{
 	 */
 	public String get(String key) throws RemoteException {
 		int keyID = (int) (Long.parseLong((Hasher.hash(key)).substring(0, 8),16) % Math.pow(2, m));
-		Node n = find_successor(keyID);
-		return n.getValue(keyID);
+		Node nodeForGet = find_successor(keyID);
+		
+		if(nodeForGet.nodeID == this.nodeID){
+			return this.getValue(keyID);
+		}
+		
+		NodeRMIInterface nodeRMI = getNodeRMIStub(nodeForGet);
+		return nodeRMI.getValue(keyID);
 	}
 	
 	/**
@@ -372,8 +388,15 @@ public class Node implements Serializable{
 	 */
 	public void put(String key, String value) throws RemoteException {
 		int keyID = (int) (Long.parseLong((Hasher.hash(key)).substring(0, 8),16) % Math.pow(2, m));
-		Node n = find_successor(keyID);
-		n.putValue(keyID, value);
+		Node nodeForPut = find_successor(keyID);
+		
+		if(nodeForPut.nodeID == this.nodeID){
+			this.putValue(keyID, value);
+		}
+		else{
+			NodeRMIInterface nodeRMI = getNodeRMIStub(nodeForPut);
+			nodeRMI.putValue(keyID, value);
+		}
 	}
 	
 	
