@@ -15,19 +15,20 @@ public class Node implements NodeRMIInterface{
 	private int successor = -1;
 	private int predecessor = -1;
 	public final int m = 12;
-	private HashMap<Integer, String> map;
+	private HashMap<Integer, String> map = new HashMap<Integer, String>();
 	
 	
 	public Node(String ipAddress, int port){
 		this.ipAddress = new IP(ipAddress, port);
 		this.nodeID = this.ipAddress.hash(m);
+		
+		// initialize finger table's start 
+		// NOTE: the actual node the finger points to, 
+		//       is NOT initialized. This should be done later
 		this.finger = new Finger[m + 1];
 		for(int i = 1; i < m + 1; i++) {
 			finger[i] = new Finger(m, nodeID, i);
 		}
-		map = new HashMap<Integer, String>();
-		this.successor = nodeID;
-
 	}
 	
 	public Node(){
@@ -49,10 +50,18 @@ public class Node implements NodeRMIInterface{
 		return Integer.toString(nodeID);
 	}
 	
+	/**
+	 * This method sets the successor of THIS node
+	 * @param i
+	 */
 	public void setSuccessor(int i){
 		this.successor = i;
 	}
 	
+	/**
+	 * This method sets the predecessor of THIS node
+	 * @param i
+	 */
 	public void setPredecessor(int i){
 		this.predecessor = i;
 	}
@@ -120,27 +129,97 @@ public class Node implements NodeRMIInterface{
 	
 	
 	public synchronized Node find_successor(int id) {
-		return getNode(find_predecessor(id).getSuccessor());
+		Node nPrime = find_predecessor(id);
+		return getNode(nPrime.successor);
 	}
 	
+	/**
+	 * This method finds the predecessor node of the given id
+	 */
 	public Node find_predecessor(int id) {
-		Node predecessor = this;
-		while(id <= predecessor.nodeID && id > getNode(predecessor.getSuccessor()).getID()) {
-			predecessor = predecessor.closest_preceding_finger(id);
+		Node nPrime = this;
+		while(nodeIdIsNotAfterLeftBoundAndWithinUpToRightBound(id, nPrime.nodeID, nPrime.successor)) {
+			nPrime = nPrime.closest_preceding_finger(id);
 		}
-		return predecessor;
+		return nPrime;
 	}
 	
-	public Node closest_preceding_finger(int id) {
-		for( int i = m; i >= 1; i --) {
-			if(finger[i].node == -1) {
-				finger[i].node = find_successor(finger[i].start).getID();
+	/**
+	 * This method checks if the given id does not lie after leftBound
+	 * and up to rightBound
+	 * @param id
+	 * @param leftBound
+	 * @param rightBound
+	 * @return true if the finger is not within (leftBound, rightBound]
+	 */
+	private boolean nodeIdIsNotAfterLeftBoundAndWithinUpToRightBound(int id, int leftBound, int rightBound){
+		boolean afterLeftBound = false;
+		boolean upToRightBound = false;
+		
+		if(leftBound <= rightBound){
+			afterLeftBound = leftBound < id;
+			upToRightBound = id <= rightBound;
+		}
+		else{		// leftBound > rightBound
+			if(leftBound < id){
+				rightBound = rightBound + ((int) Math.pow(2, this.m));
+				afterLeftBound = leftBound < id;
+				upToRightBound = id <= rightBound;
 			}
-			if(finger[i].node > this.getID() &&  finger[i].node < id && i >= 0) {
+			else{	// leftBound >= id
+				leftBound = leftBound - ((int) Math.pow(2, this.m));
+				afterLeftBound = leftBound < id;
+				upToRightBound = id <= rightBound;
+			}
+		}
+		return !(afterLeftBound && upToRightBound);
+	}
+	
+	/**
+	 * This method finds the finger of THIS node that is preceding
+	 * of the argument ID
+	 */
+	public Node closest_preceding_finger(int id) {
+		for(int i = m; i >= 1; i--){
+			int thisFingerID = finger[i].node;
+			
+			if(fingerIsWithinNonInclusiveBoundsOf(thisFingerID, this.nodeID, id)) {
 				return getNode(finger[i].node);
 			}
+			
 		}
 		return this;
+	}
+	
+	/**
+	 * This method checks if the given finger lies within the given
+	 * non-inclusive bounds
+	 * @param finger
+	 * @param leftBound
+	 * @param rightBound
+	 * @return true if the finger lies within (leftBound, rightBound)
+	 */
+	private boolean fingerIsWithinNonInclusiveBoundsOf(int finger, int leftBound, int rightBound){
+		boolean afterLeftBound = false;
+		boolean beforeRightBound = false;
+		
+		if(leftBound <= rightBound){
+			afterLeftBound = leftBound < finger;
+			beforeRightBound = finger < rightBound;
+		}
+		else{		// leftBound > rightBound
+			if(leftBound < finger){
+				rightBound = rightBound + ((int) Math.pow(2, this.m));
+				afterLeftBound = leftBound < finger;
+				beforeRightBound = finger < rightBound;
+			}
+			else{	// leftBound >= finger
+				leftBound = leftBound - ((int) Math.pow(2, this.m));
+				afterLeftBound = leftBound < finger;
+				beforeRightBound = finger < rightBound;
+			}
+		}
+		return afterLeftBound && beforeRightBound;
 	}
 	
 	public Node find(int keyID) {
