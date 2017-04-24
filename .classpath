@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="Chord/src"/>
+	<classpathentry kind="lib" path="Chord/lib/commons-codec-1.10.jar"/>
+	<classpathentry kind="lib" path="Chord/lib/jcommander-1.69.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
