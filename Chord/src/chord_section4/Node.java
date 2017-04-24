@@ -1,19 +1,24 @@
 package chord_section4;
 
 
+import java.io.Serializable;
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.HashMap;
-import java.util.Random;
 
 
-public class Node implements NodeRMIInterface{
+public class Node implements Serializable{
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private int nodeID;
 	private Finger finger[];
 	private IP ipAddress;
-	private int successor = -1;
-	private int predecessor = -1;
+	private Node successor = null;
+	private Node predecessor = null;
 	public final int m = 12;
 	private HashMap<Integer, String> map = new HashMap<Integer, String>();
 	
@@ -29,9 +34,6 @@ public class Node implements NodeRMIInterface{
 		for(int i = 1; i < m + 1; i++) {
 			finger[i] = new Finger(m, nodeID, i);
 		}
-	}
-	
-	public Node(){
 	}
 
 	@Override
@@ -54,91 +56,202 @@ public class Node implements NodeRMIInterface{
 	 * This method sets the successor of THIS node
 	 * @param i
 	 */
-	public void setSuccessor(int i){
+	public void setSuccessor(Node i){
 		this.successor = i;
 	}
-	
-	/**
-	 * This method sets the predecessor of THIS node
-	 * @param i
-	 */
-	public void setPredecessor(int i){
-		this.predecessor = i;
-	}
 
+	/**
+	 * returns the key value bucket of this node
+	 */
 	public HashMap<Integer, String> getMap() {
 		return map;
 	}
 	
+	/**
+	 * returns the IP address of this node
+	 * @return
+	 */
 	public IP getIP(){
 		return this.ipAddress;
 	}
 	
+	/**
+	 * returns the id of this node
+	 */
 	public int getID(){
 		return nodeID;
 	}
 	
-	public int getSuccessor() {
-		return this.successor;
+	/**
+	 * returns the predecessor of this node
+	 */
+	public Node getSuccessor() throws RemoteException{
+		return finger[1].node;
 	}
 	
-	public int getPredecessor() {
+	/**
+	 * returns the predecessor of this node
+	 */
+	public Node getPredecessor() throws RemoteException{
 		return this.predecessor;
 	}
 	
-	public Finger[] getFingerTable() {
-		/*FingerTableRMI table;
-		try {
-			table = new FingerTableRMI();
-			table.setTable(finger);
-			return table;
-		} catch (RemoteException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
+	/**
+	 * returns the finger table of this node
+	 */
+	public Finger[] getFingerTable() throws RemoteException {
 		return finger;
 	}
 	
-	public void join(int node){
-		Node n = getNode(node);
-		this.successor = n.find_successor(this.getID()).getID();
+	/**
+	 * sets the predecessor for this node 
+	 * (can be done remotely)
+	 */
+	public void setPredecessor(Node newPredecessor) throws RemoteException{
+		this.predecessor = newPredecessor;
 	}
 	
-	public synchronized void stabilize() {
-		Node successorNode = getNode(successor);
-		Node x = getNode(successorNode.getPredecessor());
-		int xID = x.getID();
-			if(xID > this.getID() && xID < this.getSuccessor() ) {
-			successor = xID;
+	/**
+	 * makes this node join the network
+	 * @param node
+	 * @throws RemoteException 
+	 */
+	public void join(int guiderPort) throws RemoteException{
+		Node originalNode = new Node("localhost", guiderPort);
+		initFingerTable(getNode(originalNode));
+		update_others();
+		NodeRMIInterface successorRMI = getNodeRMIStub(successor);
+		this.map = successorRMI.getKeysAfterLeftAndUpToRight(predecessor.nodeID, this.nodeID);
+	}
+	
+	/**
+	 * this method returns and retrieves all the keys and values after the leftBound
+	 * and upTo the right bound
+	 */
+	public HashMap<Integer,String> getKeysAfterLeftAndUpToRight(int left, int right) throws RemoteException{
+		HashMap<Integer,String> exportMap = new HashMap<>();
+		
+		// extract all keys in the specified range, and if they have
+		// a value, add them to the map to be exported
+		for(int i = left + 1; i <= right; i++){
+			String exportVal = map.remove(i);
+			if(exportVal != null){
+				exportMap.put(i, exportVal);
+			}
 		}
-		x.notify(this);
+		
+		return exportMap;
 	}
-
-	public synchronized void notify(Node n) {
-		int nID = n.getID();
-		if(predecessor == -1 || (nID > predecessor && nID < this.getID())) {
-			predecessor = nID;
+	
+	/**
+	 * initializes THIS node finger table using the 
+	 * @param nPrime
+	 * @throws RemoteException 
+	 */
+	private void initFingerTable(Node nPrime) throws RemoteException{
+		finger[1].node = nPrime.find_successor(finger[1].start);
+		successor = finger[1].node;
+		predecessor = getNode(successor).predecessor;
+		NodeRMIInterface nodeRMIStub = getNodeRMIStub(successor);
+		
+		Chord.debugPrint("nodeRMI Stub is null: " + (nodeRMIStub == null));
+		
+		nodeRMIStub.setPredecessor(this);
+		// ------------------------------------------------------
+		
+		for(int i = 1; i < m; i++){
+			if(nodeIdIsOnOrAfterLeftAndBeforeRight(finger[i + 1].start, this.nodeID, finger[i].node.nodeID)){
+				finger[i + 1].node = finger[i].node;
+			}
+			else{
+				finger[i + 1].node = nPrime.find_successor(finger[i + 1].start);
+			}
 		}
 	}
 	
+	/**
+	 * if candidateNode is the finger on the candidateRow, then update 
+	 * the candidate row with the candidate node
+	 * @param candidateNode
+	 * @param candidateRow
+	 */
+	public void update_finger_table(Node candidateNode, int candidateRow) throws RemoteException{
+		if(nodeIdIsOnOrAfterLeftAndBeforeRight(candidateNode.nodeID, this.nodeID, finger[candidateRow].node.nodeID)){
+			finger[candidateRow].node = candidateNode;
+			
+			NodeRMIInterface predecessorRMI = getNodeRMIStub(predecessor);
+			predecessorRMI.update_finger_table(candidateNode, candidateRow);	
+		}
+	}
 	
-	public synchronized void fix_fingers() {
-		int i = new Random().nextInt(m) + 1;
-		finger[i].node = find_successor(finger[i].start).getID();
+	/**
+	 * This method update the finger table of all other nodes once this
+	 * node has been added
+	 * @throws RemoteException
+	 */
+	public void update_others() throws RemoteException{
+		for(int i = 1; i <= m; i++){
+			int logPredecessorIndex = this.nodeID - ((int) Math.pow(2, i - 1));
+			if(logPredecessorIndex < 0){
+				logPredecessorIndex = logPredecessorIndex + ((int) Math.pow(2, m));
+			}
+			Node logPredecessor = find_predecessor(logPredecessorIndex);
+			
+			NodeRMIInterface predecessorRMI = getNodeRMIStub(logPredecessor);
+			predecessorRMI.update_finger_table(this, i);
+		}
+	}
+	
+	/**
+	 * This method checks if the given id is within on or after left bound
+	 * but before rightbount
+	 * @param id
+	 * @param leftBound
+	 * @param rightBound
+	 * @return true if the finger is within [leftBound, rightBound)
+	 */
+	private boolean nodeIdIsOnOrAfterLeftAndBeforeRight(int id, int leftBound, int rightBound){
+		boolean onOrAfterLeftBound = false;
+		boolean beforeRightBound = false;
+		
+		if(leftBound <= rightBound){
+			onOrAfterLeftBound = leftBound <= id;
+			beforeRightBound = id < rightBound;
+		}
+		else{		// leftBound > rightBound
+			if(leftBound < id){
+				rightBound = rightBound + ((int) Math.pow(2, this.m));
+				onOrAfterLeftBound = leftBound <= id;
+				beforeRightBound = id < rightBound;
+			}
+			else{	// leftBound >= id
+				leftBound = leftBound - ((int) Math.pow(2, this.m));
+				onOrAfterLeftBound = leftBound <= id;
+				beforeRightBound = id < rightBound;
+			}
+		}
+		return onOrAfterLeftBound && beforeRightBound;
 	}
 	
 	
-	public synchronized Node find_successor(int id) {
+	
+	
+	/**
+	 * finds the successor node of the associated id
+	 * @throws RemoteException 
+	 */
+	public synchronized Node find_successor(int id) throws RemoteException {
 		Node nPrime = find_predecessor(id);
-		return getNode(nPrime.successor);
+		return getNode(nPrime.getSuccessor());
 	}
 	
 	/**
 	 * This method finds the predecessor node of the given id
+	 * @throws RemoteException 
 	 */
-	public Node find_predecessor(int id) {
+	public Node find_predecessor(int id) throws RemoteException {
 		Node nPrime = this;
-		while(nodeIdIsNotAfterLeftBoundAndWithinUpToRightBound(id, nPrime.nodeID, nPrime.successor)) {
+		while(nodeIdIsNotAfterLeftBoundAndWithinUpToRightBound(id, nPrime.nodeID, nPrime.getSuccessor().getID())) {
 			nPrime = nPrime.closest_preceding_finger(id);
 		}
 		return nPrime;
@@ -181,7 +294,7 @@ public class Node implements NodeRMIInterface{
 	 */
 	public Node closest_preceding_finger(int id) {
 		for(int i = m; i >= 1; i--){
-			int thisFingerID = finger[i].node;
+			int thisFingerID = finger[i].node.getID();
 			
 			if(fingerIsWithinNonInclusiveBoundsOf(thisFingerID, this.nodeID, id)) {
 				return getNode(finger[i].node);
@@ -222,44 +335,63 @@ public class Node implements NodeRMIInterface{
 		return afterLeftBound && beforeRightBound;
 	}
 	
-	public Node find(int keyID) {
-		return find_successor(keyID);
-		
-	}
-	
+	/**
+	 * gets the value associated with this key in this node's
+	 * bucket
+	 */
 	public String getValue(int keyID){
 		return map.get(keyID);
 	}
 	
-	public String putValue(int keyID, String value){
-		return map.put(keyID, value);
+	/**
+	 * puts the key value pair in this node's bucket
+	 */
+	public void putValue(int keyID, String value){
+		map.put(keyID, value);
 	}
 	
-	public String get(String key) {
+	/**
+	 * This method gets the value associated with the following key in this bucket,
+	 * or null otherwise
+	 * @param key
+	 * @return
+	 * @throws RemoteException 
+	 */
+	public String get(String key) throws RemoteException {
 		int keyID = (int) (Long.parseLong((Hasher.hash(key)).substring(0, 8),16) % Math.pow(2, m));
-		Node n = find(keyID);
+		Node n = find_successor(keyID);
 		return n.getValue(keyID);
 	}
 	
-	public String put(String key, String value) {
+	/**
+	 * This method puts the specified key value pair within
+	 * this node's bucket
+	 * @param key
+	 * @param value
+	 * @throws RemoteException 
+	 */
+	public void put(String key, String value) throws RemoteException {
 		int keyID = (int) (Long.parseLong((Hasher.hash(key)).substring(0, 8),16) % Math.pow(2, m));
-		Node n = find(keyID);
-		return n.putValue(keyID, value);
+		Node n = find_successor(keyID);
+		n.putValue(keyID, value);
 	}
 	
 	
-	public int[] getArray(){
-		return new int[3];
-	}
 	
-	public Node getNode(int id) {
-		if(id == nodeID || id == -1) {
+	/**
+	 * This method gets a node object from the network
+	 * out of the specified nodeID
+	 * @param id
+	 * @return a node object of the id of the given ID
+	 */
+	public Node getNode(Node node) {
+		if(node.nodeID == nodeID || node == this) {
 			return this;
 		}
 		try {
-            Registry registry = LocateRegistry.getRegistry("localhost",id);
-            NodeRMIInterface stub = (NodeRMIInterface) registry.lookup(Integer.toString(id));
-            Node n = new Node();
+            Registry registry = LocateRegistry.getRegistry("localhost", node.ipAddress.getPort());
+            NodeRMIInterface stub = (NodeRMIInterface) registry.lookup(Integer.toString(node.ipAddress.getPort()));
+            Node n = new Node("localhost", node.ipAddress.getPort());
             n.finger = stub.getFingerTable();
             n.predecessor = stub.getPredecessor();
             n.successor = stub.getSuccessor();
@@ -273,16 +405,18 @@ public class Node implements NodeRMIInterface{
 		return null;
 	}
 	
-	public static int getNode2(int id) {
+	/**
+	 * this method gets an RMI stub for the specified node ID
+	 */
+	public NodeRMIInterface getNodeRMIStub(Node node){
 		try {
-            Registry registry = LocateRegistry.getRegistry("localhost",id);
-            NodeRMIInterface stub = (NodeRMIInterface) registry.lookup(Integer.toString(id));
-            return stub.getPredecessor();
+            Registry registry = LocateRegistry.getRegistry("localhost", node.ipAddress.getPort());
+            NodeRMIInterface stub = (NodeRMIInterface) registry.lookup(Integer.toString(node.ipAddress.getPort()));
+            return  stub;
         } catch (Exception e) {
-            System.err.println("Client exception: " + e.toString());
+            System.out.println("Client exception: " + e.toString());
             e.printStackTrace();
         }
-		return -1;
+		return null;
 	}
-	
 }

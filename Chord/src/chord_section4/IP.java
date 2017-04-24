@@ -1,6 +1,8 @@
 package chord_section4;
 
-public class IP {
+import java.io.Serializable;
+
+public class IP implements Serializable {
 
 	private String ipAddress;
 	private int port;

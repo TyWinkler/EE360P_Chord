@@ -1,5 +1,6 @@
 package chord_section4;
 
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
@@ -9,6 +10,10 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 
 public class Chord {
+	public static final boolean DEBUG = true;
+	
+	public final int m = 12;
+	
 	@Parameter(names={"--ip", "-i"})
 	String ipAddress;
 	@Parameter(names={"--port", "-p"})
@@ -18,14 +23,15 @@ public class Chord {
 
 	/**
 	 * @param args
+	 * @throws RemoteException 
 	 */
-	public static void main(String ... args) {
+	public static void main(String ... args) throws RemoteException {
 		Chord main = new Chord();
 		JCommander.newBuilder().addObject(main).build().parse(args);
 	    main.run();
 	}
 	
-	public void run() {
+	public void run() throws RemoteException {
 		// send messages out about this node
 		Node node = new Node(ipAddress,port);
 		System.out.println("Running Section 4!");
@@ -33,7 +39,11 @@ public class Chord {
 		
 		// setup this RMI Server
 		try {
-            NodeRMIInterface stub = (NodeRMIInterface) UnicastRemoteObject.exportObject(node, port);
+			//System.setProperty("java.rmi.server.hostname", "localhost");
+			
+			NodeRMIComm communicator = new NodeRMIComm(node);
+			
+            NodeRMIInterface stub = (NodeRMIInterface) UnicastRemoteObject.exportObject(communicator, port);
 
             // Bind the remote object's stub in the registry
             Registry registry = LocateRegistry.createRegistry(port);
@@ -48,19 +58,20 @@ public class Chord {
 		
 		// if NOT the first node, then join through the specified node
 		if(port != firstPort){
-			node.join(port);
+			// join to the original node
+			node.join(firstPort);
 			
 		// ... otherwise (we ARE the first node):
 		} else {
-			node.setSuccessor(node.getID());		// we set ourselves as our own successor
-			node.setPredecessor(node.getID());		// we set ourselves as our own predecessor
+			node.setSuccessor(node);		// we set ourselves as our own successor
+			node.setPredecessor(node);		// we set ourselves as our own predecessor
 			
 			// now we initialize our own finger table
 			// NOTE: since we are the only node, we make all
 			//       of our fingers point to ourself
 			Finger[] table = node.getFingerTable();
 			for(int i = 1; i <= node.m; i ++) {
-				table[i].node = node.getID();
+				table[i].node = node;
 			}
 		}
 		
@@ -72,11 +83,7 @@ public class Chord {
 	        
 	        // getNode command. Second argument should be the hashValue of the node
 	        if(tokens[0].equals("getNode")){
-	        	if(tokens[1] != null){
-	        		System.out.println(node.getNode(Integer.parseInt(tokens[1])).toString());
-	        	} else {
-		        	System.err.println("Unrecognized Command");
-		        }
+	        	System.out.println("This node is on port: " + node.getIP().getPort());
 	        } 
 	        
 	        // put command. provide the key and value
@@ -109,6 +116,15 @@ public class Chord {
 	    }
 		sc.close();
 
+	}
+	
+	/**
+	 * used for debugging print
+	 */
+	public static void debugPrint(String debugMessage){
+		if(Chord.DEBUG){
+			System.out.println(debugMessage);
+		}
 	}
 	
 }

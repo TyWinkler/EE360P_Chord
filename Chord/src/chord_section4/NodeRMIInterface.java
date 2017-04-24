@@ -6,14 +6,22 @@ import java.util.HashMap;
 
 public interface NodeRMIInterface extends Remote{
 	public int getID() throws RemoteException;
-	public int getSuccessor() throws RemoteException;
-	public int getPredecessor() throws RemoteException;
+	public Node getSuccessor() throws RemoteException;
+	public Node getPredecessor() throws RemoteException;
+	
 	public Node find_successor(int id) throws RemoteException;
 	public Node find_predecessor(int id) throws RemoteException;
 	public Node closest_preceding_finger(int id) throws RemoteException;
+	
 	public String getValue(int keyID) throws RemoteException;
-	public String putValue(int keyID, String value) throws RemoteException;
+	public void putValue(int keyID, String value) throws RemoteException;
+	
 	public Finger[] getFingerTable() throws RemoteException;
 	public HashMap<Integer, String> getMap() throws RemoteException;
-	public int[] getArray() throws RemoteException;
+	
+	public void setPredecessor(Node newPredecessor) throws RemoteException;
+	
+	public void update_finger_table(Node candidateNode, int candidateRow) throws RemoteException;
+	
+	public HashMap<Integer,String> getKeysAfterLeftAndUpToRight(int left, int right) throws RemoteException;
 }
