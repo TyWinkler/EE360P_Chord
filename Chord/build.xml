@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Chord" default="dist" basedir=".">
+	<property name="pkg.name" value="chord_section4"/>
+	<property name="src.dir" value="src"/>
+	<property name="build.dir" value="build"/>
+	<property name="dist.dir" value="dist"/>
+	<property name="dist.jarfile" value="${dist.dir}/ChordProject.jar"/>
+	
+	<path id="lib.path.ref">
+		<fileset dir="lib" includes="*.jar"/>
+		<fileset dir="${build.dir}" includes="*.class"/>
+	</path>
+	
+	<target name="init">
+		<mkdir dir="${build.dir}"/>
+	</target>
+	
+	<target name="compile" depends="init">
+		<javac srcdir="${src.dir}" destdir="${build.dir}" includeantruntime="false">
+			<classpath refid="lib.path.ref"/>
+		</javac>
+	</target>
+	
+	<target name="dist" depends="compile">
+		<mkdir dir="${dist.dir}"/>
+		<jar jarfile="${dist.jarfile}" basedir="${build.dir}">
+			<manifest>
+				<attribute name="Main-Class" value="${pkg.name}.Chord"/>
+			</manifest>
+		</jar>
+	</target>
+	
+	<target name="run" depends="dist">
+		<java executable="${dist.jarfile}">
+			<arg value="${arg0}"/>
+			<arg value="${arg1}"/>
+			<arg value="${arg2}"/>
+			<arg value="${arg3}"/>
+			<arg value="${arg4}"/>
+			<arg value="${arg5}"/>
+		</java>
+	</target>
+	
+	<target name ="clean">
+		<delete dir="${build.dir}"/>
+		<delete dir="${dist.dir}"/>
+	</target>
+	
+</project>
