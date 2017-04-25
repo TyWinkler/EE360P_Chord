@@ -19,8 +19,9 @@ public class Node implements Serializable{
 	private IP ipAddress;
 	private Node successor = null;
 	private Node predecessor = null;
-	public final int m = 12;
+	public static final int m = 12;
 	private HashMap<Integer, String> map = new HashMap<Integer, String>();
+	private boolean allowSelfFinger = false;
 	
 	
 	public Node(String ipAddress, int port){
@@ -114,14 +115,28 @@ public class Node implements Serializable{
 	}
 	
 	/**
+	 * This function adds one node to the finger table of THIS node
+	 */
+	public void addNewNode(Node newNodeID){
+		for(int i = 1; i <= m; i++){
+			if(nodeIdIsOnOrAfterLeftAndBeforeRight(newNodeID.nodeID, this.nodeID, finger[i].node.nodeID)){
+				finger[i].node = newNodeID;
+			}
+		}
+	}
+	
+	/**
 	 * makes this node join the network
 	 * @param node
 	 * @throws RemoteException 
 	 */
 	public void join(int guiderPort) throws RemoteException{
 		Node originalNode = new Node("localhost", guiderPort);
+		//NodeRMIInterface nPrimeRMI = getNodeRMIStub(getNode(originalNode));
+		//nPrimeRMI.addNewNode(this);
 		initFingerTable(getNode(originalNode));
 		update_others();
+		initFingerTable(getNode(originalNode));
 		NodeRMIInterface successorRMI = getNodeRMIStub(successor);
 		this.map = successorRMI.getKeysAfterLeftAndUpToRight(predecessor.nodeID, this.nodeID);
 	}
@@ -216,6 +231,15 @@ public class Node implements Serializable{
 		boolean onOrAfterLeftBound = false;
 		boolean beforeRightBound = false;
 		
+		if(this.nodeID == id && !allowSelfFinger){
+			return false;
+		}
+		
+		// deal with wrap-around case
+		if(leftBound == rightBound){
+			return true;
+		}
+		
 		if(leftBound <= rightBound){
 			onOrAfterLeftBound = leftBound <= id;
 			beforeRightBound = id < rightBound;
@@ -252,7 +276,7 @@ public class Node implements Serializable{
 	 * @throws RemoteException 
 	 */
 	public Node find_predecessor(int id) throws RemoteException {
-		if(this.nodeID == this.getSuccessor().nodeID){
+		if(this.nodeID == this.getSuccessor().nodeID ){
 			return this;
 		}
 		
@@ -326,6 +350,17 @@ public class Node implements Serializable{
 		boolean afterLeftBound = false;
 		boolean beforeRightBound = false;
 		
+		// deal with the wrapAround case
+		if(leftBound == rightBound){
+			if(finger == leftBound){
+				return false;
+			}
+			else{
+				return true;
+			}
+		}
+		
+		
 		if(leftBound <= rightBound){
 			afterLeftBound = leftBound < finger;
 			beforeRightBound = finger < rightBound;
@@ -350,7 +385,7 @@ public class Node implements Serializable{
 	 * bucket
 	 */
 	public String getValue(int keyID){
-		return map.get(keyID) + " (stored at node with ID  " + this.nodeID + " and port " + this.ipAddress.getPort() + ")";
+		return map.get(keyID) + " keyID: " + keyID + " (stored at node with ID  " + this.nodeID + " and port " + this.ipAddress.getPort() + ")";
 	}
 	
 	/**
@@ -412,7 +447,7 @@ public class Node implements Serializable{
 			return this;
 		}
 		try {
-            Registry registry = LocateRegistry.getRegistry("localhost", node.ipAddress.getPort());
+            Registry registry = LocateRegistry.getRegistry("localhost", Registry.REGISTRY_PORT);
             NodeRMIInterface stub = (NodeRMIInterface) registry.lookup(Integer.toString(node.ipAddress.getPort()));
             Node n = new Node("localhost", node.ipAddress.getPort());
             n.finger = stub.getFingerTable();
@@ -431,9 +466,9 @@ public class Node implements Serializable{
 	/**
 	 * this method gets an RMI stub for the specified node ID
 	 */
-	public NodeRMIInterface getNodeRMIStub(Node node){
+	public static NodeRMIInterface getNodeRMIStub(Node node){
 		try {
-            Registry registry = LocateRegistry.getRegistry("localhost", node.ipAddress.getPort());
+            Registry registry = LocateRegistry.getRegistry("localhost", Registry.REGISTRY_PORT);
             NodeRMIInterface stub = (NodeRMIInterface) registry.lookup(Integer.toString(node.ipAddress.getPort()));
             return  stub;
         } catch (Exception e) {

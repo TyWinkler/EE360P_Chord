@@ -10,216 +10,119 @@
 
 package chord_section4;
 
+import java.rmi.RemoteException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class LamportMutex {
     LamportClock c;
     int numAcks;
-    Queue<QueueObject> q; // request queue
-    Linker linker;
-    AtomicBoolean needToPoll;
+    Queue<Timestamp> q; // request queue
+    static int numProc = 1;
     
-    HashSet<ClientRequest> sendedReleases = new HashSet<ClientRequest>();
+    ReentrantLock mutLock = new ReentrantLock();
+	Condition mutCond = mutLock.newCondition();
     
-    ReentrantLock pollingLock = new ReentrantLock();
-    Condition pollingCondition = pollingLock.newCondition();
-
-    public LamportMutex(Linker linker) {
-        this.linker = linker;
-        needToPoll = new AtomicBoolean(false);
+    public LamportMutex() {
         c = new LamportClock();
-        q = new PriorityQueue<QueueObject>(1, new Comparator<QueueObject>() {
-            public int compare(QueueObject a, QueueObject b) {
-                return QueueObject.compare(a, b);
+        q = new PriorityQueue<Timestamp>(1, new Comparator<Timestamp>() {
+            public int compare(Timestamp a, Timestamp b) {
+                return Timestamp.compare(a, b);
             }
         });
         numAcks = 0;
-        // public HeartbeatChecker(Linker linker, LamportMutex lock)
     }
 
-    public synchronized void requestCS(ClientRequest clientRequest) {
-        
-         c.tick(); 
-         q.add(new QueueObject(c.getValue(), linker.connector.myID, clientRequest));
-         this.numAcks = 0;
-         needToPoll.set(q.peek().serverID != linker.connector.myID);
-         pollingLock.lock();
-         pollingCondition.signalAll();
-         pollingLock.unlock();
-         
-         // TODO: Send Message to all. Update linker.N if necessary  
-         Set<Integer> keysSet = linker.connector.link.keySet();
-         Iterator<Integer> setIterator = keysSet.iterator();
-         while(setIterator.hasNext()){
-            Integer otherServerID = setIterator.next(); 
-             
-            if ((otherServerID != null) && (otherServerID != linker.connector.myID)) {
-                try {
-                    linker.sendMessage(otherServerID, new RequestMessage(c, clientRequest));
-                    linker.ackLock.lock();
-                    boolean serverDied = !linker.ackCondition.await(100, TimeUnit.MILLISECONDS);
-                    linker.ackLock.unlock();
-                    if (serverDied) {
-                        
-                        if (Server.DEBUG) {
-                            System.out.println("server " + otherServerID + " seems to have died");
-                        }
-                        
-                        setIterator.remove();
-                        linker.N--;
-                    }
-                } catch (Exception e) {
-                    // TODO Auto-generated catch block
-                    if (Server.DEBUG) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-         }
-         
-         // TODO: Add heartbeat check 
-         while((q.peek().serverID != linker.connector.myID) || (this.numAcks < linker.N-1)){
-             try {
-                 if(Server.DEBUG){
-                     System.out.println("I am waiting to be first in queue!!");
-                 }
-                 
-                wait();
-            } catch (InterruptedException e) {
-                if (Server.DEBUG) {
-                    e.printStackTrace(); // TODO Auto-generated catch block
-                }
-            }
-         }
-         
+    /**
+     * This functions asks the network for permission to access the CS
+     * @param myId
+     */
+	public void requestCS(int myId) {
+		int curNumProc = numProc;
+		c.tick();
+		q.add(new Timestamp(c.getValue(), myId));
+		
+		// send message to all other processes
+		numAcks = 0;
+		sendMsg("request", c.getValue());
+		
+		while ((q.peek().getPid() != myId) || (numAcks < curNumProc - 1))
+			try {
+				mutLock.lock();
+				mutCond.await();
+				mutLock.unlock();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+	}
+
+    public void releaseCS(String relMsg) {
+    	q.remove();
+    	
+    	// tell all processes that it is over
+		sendMsg(relMsg, c.getValue());
     }
 
-    public synchronized void releaseCS(ClientRequest clientRequest) {
-        q.remove();
-        if(q.peek() == null){
-            needToPoll.set(false);
-        }
-        else {
-            needToPoll.set(q.peek().serverID != linker.connector.myID);
-        }
-        pollingLock.lock();
-        pollingCondition.signalAll();
-        pollingLock.unlock();
-        
-        // TODO: SEND RELEASE TO ALL sendMsg(neighbors, "release",
-        // c.getValue());
-        Set<Integer> keysSet = linker.connector.link.keySet();
-        Iterator<Integer> setIterator = keysSet.iterator();
-        while (setIterator.hasNext()) {
-            Integer otherServerID = setIterator.next();
-            if ((otherServerID != null) && (otherServerID != linker.connector.myID)) {
-                try {
-                    linker.sendMessage(otherServerID, new ReleaseMessage(c, clientRequest));
+    public void handleMsg(int srcId, String tag, int srcClk) {
+    	//int timeStamp = m.getMessageInt();
+		c.receiveAction(srcClk);
+		if (tag.equals("request")) {
+			q.add(new Timestamp(srcClk, srcId));
+			
+			// send message back to who sent you message
+			sendMsg("ack",c.getValue(), srcId);
+		} else if (tag.equals("releaseJoin")) {
 
-                } catch (Exception e) {
-                    // TODO Auto-generated catch block
-                    if (Server.DEBUG) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
+			Iterator<Timestamp> it =  q.iterator();			    
+			while (it.hasNext()){
+				if (it.next().getPid() == srcId) it.remove();
+			}
+			numProc++;
+		} else if (tag.equals("releaseLeave")) {
+
+			Iterator<Timestamp> it =  q.iterator();			    
+			while (it.hasNext()){
+				if (it.next().getPid() == srcId) it.remove();
+			}
+			numProc--;
+		} else if (tag.equals("ack"))
+			numAcks++;
+		
+		mutLock.lock();
+		mutCond.signalAll();
+		mutLock.unlock();
+    }
     
-    }
+    private void sendMsg(String tag, int myClk){
+		try {
+			Integer myId = Chord.node.getIP().getPort();
+			String myIdStr = myId.toString();
+			String[] dests = Chord.registry.list();
 
-    public synchronized void handleMsg(Object message, int src) {
-        
-        if (message instanceof RequestMessage) {
-            RequestMessage reqMsg = (RequestMessage) message;
-            int timeStamp = reqMsg.clockValue;
-            c.receiveAction(timeStamp);
-            
-            q.add(new QueueObject(timeStamp, src, reqMsg.clientRequest));
-            try {
-                linker.sendMessage(src, new AcknowledgeMessage(c));
-            } catch (Exception e) {
-                // TODO Auto-generated catch block
-                if (Server.DEBUG) {
-                    e.printStackTrace();
-                }
-            }
-        } 
-        else if (message instanceof ReleaseMessage) {
-            ReleaseMessage relMsg = (ReleaseMessage) message;
-            int timeStamp = relMsg.clockValue;
-            c.receiveAction(timeStamp);
-            
-            // REBROADCAST THIS RELEASE!!
-            if (!sendedReleases.contains(relMsg.clientRequest)) {
-                Set<Integer> keysSet = linker.connector.link.keySet();
-                for (Integer otherServerID : keysSet) {
-                    if ((otherServerID != null) && (otherServerID != linker.connector.myID) && (otherServerID != src)) {
-                        try {
-                            linker.sendMessage(otherServerID, new ReleaseMessage(c, relMsg.clientRequest));
+			for (String destStr : dests) {
+				if (destStr.equals(myIdStr))
+					continue;
 
-                        } catch (Exception e) {
-                            // TODO Auto-generated catch block
-                            if (Server.DEBUG) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
-                }
-                sendedReleases.add(relMsg.clientRequest);
-            }
-            else{
-                notifyAll();
-                return;
-            }
-            
-            QueueObject newReady = null;
-            for(QueueObject inQ : q){
-                if(inQ.clientRequest.equals(relMsg.clientRequest)){
-                    newReady = inQ;
-                }
-            }
-            if(newReady == null){
-                notifyAll();
-                return;     // this is when we get a duplicate release
-            }
-            newReady.readyToDo = true;
-            
-            ArrayList<ClientRequest> jobsToDo = new ArrayList<ClientRequest>();
-            
-            while(q.peek() != null){
-                if(q.peek().readyToDo == true){
-                    jobsToDo.add(q.remove().clientRequest);
-                }
-            }
-            
-            if(q.peek() == null){
-                needToPoll.set(false);
-            }
-            else {
-                needToPoll.set(q.peek().serverID != linker.connector.myID);
-            }
-            pollingLock.lock();
-            pollingCondition.signalAll();
-            pollingLock.unlock();
-            
-            // Do all jobs in the jobsToDo array
-            for(ClientRequest job : jobsToDo){
-                String response = HandleClientThread.handleRequest(job.request, Server.onlineStore);
-                HandleClientThread.backlog.put(job, response);
-            }
-            
-        } 
-        else if (message instanceof AcknowledgeMessage) {
-            AcknowledgeMessage ackMsg = (AcknowledgeMessage) message;
-            int timeStamp = ackMsg.clockValue;
-            c.receiveAction(timeStamp);
-            
-            numAcks++;
-        }
-        notifyAll();
+				int destId = Integer.parseInt(destStr);
+				NodeRMIInterface destStub = Node.getNodeRMIStub(new Node("localhost", destId));
+				destStub.newLamportMsg(myId, tag, c.getValue());
+				
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+    
+private void sendMsg(String tag, int myClk, int destId){
+    	NodeRMIInterface destStub = Node.getNodeRMIStub(new Node("localhost", destId));
+    	try {
+			destStub.newLamportMsg(Chord.node.getIP().getPort(), tag, c.getValue());
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     }
 }

@@ -24,4 +24,14 @@ public interface NodeRMIInterface extends Remote{
 	public void update_finger_table(Node candidateNode, int candidateRow) throws RemoteException;
 	
 	public HashMap<Integer,String> getKeysAfterLeftAndUpToRight(int left, int right) throws RemoteException;
+	
+	public void addNewNode(Node newNodeID) throws RemoteException;
+
+	public void requestJoin(int requesterID) throws RemoteException;
+	
+	public void joinRequestGranted() throws RemoteException;
+	
+	public void reportJoinFinished() throws RemoteException;
+	
+	public void newLamportMsg(int srcId, String tag, int srcClk) throws RemoteException;
 }
