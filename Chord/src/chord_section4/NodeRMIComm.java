@@ -100,5 +100,21 @@ public class NodeRMIComm implements NodeRMIInterface {
 		
 		Chord.mutex.handleMsg(srcId, tag, srcClk);
 	}
+	
+	// --------------------- METHODS FOR LEAVING ---------------------------
+	public void reportLeaving() throws RemoteException{
+		Chord.mutex.releaseCS("releaseLeave");
+	}
+	
+	public void obtainKeys(HashMap<Integer, String> newKeys) throws RemoteException{
+		commNode.obtainKeys(newKeys);
+	}
+	
+	public void deleteNode(Node goneNode) throws RemoteException{
+		commNode.deleteNode(goneNode);
+	}
 
+	public void reportLeaveFinished() throws RemoteException{
+		//Chord.mutex.releaseCS("releaseLeave");
+	}
 }

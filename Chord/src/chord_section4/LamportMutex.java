@@ -47,7 +47,7 @@ public class LamportMutex {
 		numAcks = 0;
 		sendMsg("request", c.getValue());
 		
-		while ((q.peek().getPid() != myId) || (numAcks < curNumProc - 1))
+		while ((q.peek().getPid() != myId) || (numAcks < curNumProc - 1)){
 			try {
 				mutLock.lock();
 				mutCond.await();
@@ -56,6 +56,7 @@ public class LamportMutex {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+		}
 	}
 
     public void releaseCS(String relMsg) {

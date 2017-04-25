@@ -2,10 +2,12 @@ package chord_section4;
 
 
 import java.io.Serializable;
+import java.rmi.AccessException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.HashMap;
+import java.util.Set;
 
 
 public class Node implements Serializable{
@@ -19,7 +21,7 @@ public class Node implements Serializable{
 	private IP ipAddress;
 	private Node successor = null;
 	private Node predecessor = null;
-	public static final int m = 12;
+	public static final int m = 10;
 	private HashMap<Integer, String> map = new HashMap<Integer, String>();
 	private boolean allowSelfFinger = false;
 	
@@ -132,11 +134,10 @@ public class Node implements Serializable{
 	 */
 	public void join(int guiderPort) throws RemoteException{
 		Node originalNode = new Node("localhost", guiderPort);
-		//NodeRMIInterface nPrimeRMI = getNodeRMIStub(getNode(originalNode));
-		//nPrimeRMI.addNewNode(this);
 		initFingerTable(getNode(originalNode));
 		update_others();
 		initFingerTable(getNode(originalNode));
+		update_others();
 		NodeRMIInterface successorRMI = getNodeRMIStub(successor);
 		this.map = successorRMI.getKeysAfterLeftAndUpToRight(predecessor.nodeID, this.nodeID);
 	}
@@ -212,11 +213,41 @@ public class Node implements Serializable{
 			if(logPredecessorIndex < 0){
 				logPredecessorIndex = logPredecessorIndex + ((int) Math.pow(2, m));
 			}
-			Node logPredecessor = find_predecessor(logPredecessorIndex);
+			
+			Node logPredecessor = null;
+			int logPredecessorPort = isNode(logPredecessorIndex);
+			if(logPredecessorPort == -1){
+				logPredecessor = find_predecessor(logPredecessorIndex);
+			}
+			else{
+				logPredecessor = new Node("localhost", logPredecessorPort);
+			}
 			
 			NodeRMIInterface predecessorRMI = getNodeRMIStub(logPredecessor);
 			predecessorRMI.update_finger_table(this, i);
 		}
+	}
+	
+	/**
+	 * Checks if the specified node id belongs to the database
+	 */
+	private int isNode(int nodeId){
+		String[] nodes = null;
+		try {
+			nodes = Chord.registry.list();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		for (String node : nodes) {
+			int thisNode = Integer.parseInt(node);
+			int thisNodeId = new Node("localhost", thisNode).getID();
+			if (nodeId == thisNodeId){
+				return thisNode;
+			}
+		}
+		return -1;
 	}
 	
 	/**
@@ -434,6 +465,41 @@ public class Node implements Serializable{
 		}
 	}
 	
+	/**
+	 * This method adds all the keys of leaving node to this
+	 */
+	public void obtainKeys(HashMap<Integer, String> newKeys) throws RemoteException{
+		Set<Integer> keySet = newKeys.keySet();
+		for(Integer key : keySet){
+			String newEntry = newKeys.get(key);
+			
+			if(newEntry != null){
+				this.map.put(key, newEntry);
+			}
+			
+		}
+		
+	}
+	
+	/**
+	 * deletes the given node from THIS node
+	 */
+	public void deleteNode(Node goneNode) throws RemoteException{
+		if(getSuccessor().getID() == goneNode.getID()){
+			successor = goneNode.getSuccessor();
+		}
+		
+		if(find_predecessor(nodeID).getID() == goneNode.getID()){
+			predecessor = goneNode.predecessor;
+		}
+		
+		for(int i = 1; i <= m; i++){
+			if(finger[i].node.getID() == goneNode.getID()){
+				finger[i].node = goneNode.getSuccessor();
+			}
+		}
+	}
+	
 	
 	
 	/**
@@ -477,4 +543,6 @@ public class Node implements Serializable{
         }
 		return null;
 	}
+	
+	
 }

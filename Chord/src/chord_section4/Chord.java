@@ -44,12 +44,14 @@ public class Chord extends Thread{
 		System.out.println("Running Section 4!");
 		System.out.println("Node: " + node.getID() + " created with ip: " + node.getIP().toString());
 		
+		NodeRMIComm communicator = null;
+		
 		// setup this RMI Server
 		NodeRMIInterface stub = null;
 		try {
 			//System.setProperty("java.rmi.server.hostname", "localhost");
 			
-			NodeRMIComm communicator = new NodeRMIComm(node);
+			communicator = new NodeRMIComm(node);
 			
             stub = (NodeRMIInterface) UnicastRemoteObject.exportObject(communicator, port);
 
@@ -158,6 +160,46 @@ public class Chord extends Thread{
 	        
 	        // quit the app!
 	        else if(tokens[0].equals("quit")){
+	        	try {
+	        		// request permission to leave
+					NodeRMIInterface originalStub = Node.getNodeRMIStub(new Node("localhost", firstPort));
+					originalStub.requestJoin(node.getIP().getPort());
+	        		
+	    			Integer myId = Chord.node.getIP().getPort();
+	    			String myIdStr = myId.toString();
+	    			String[] dests = Chord.registry.list();
+	    			
+	    			Node leavingSuccessor = node.getSuccessor();
+	    			NodeRMIInterface sucStub = Node.getNodeRMIStub(new Node("localhost", leavingSuccessor.getIP().getPort()));
+    				sucStub.obtainKeys(node.getMap());
+
+	    			for (String destStr : dests) {
+	    				if (destStr.equals(myIdStr))
+	    					continue;
+
+	    				int destId = Integer.parseInt(destStr);
+	    				NodeRMIInterface destStub = Node.getNodeRMIStub(new Node("localhost", destId));
+	    				destStub.deleteNode(node);	
+	    				
+	    				System.out.println(destId + " deleted");
+	    			}
+	    			
+	    			// signal that you have finished joining
+	    			UnicastRemoteObject.unexportObject(communicator, true);
+	    			registry.unbind(myIdStr);
+	    			
+					originalStub.reportLeaving();
+					
+					
+					
+					break;
+
+	    		} catch (Exception e) {
+	    			e.printStackTrace();
+	    		}
+	        	
+	        	
+	        	
 	        	
 	        	break;
 	        } 

@@ -33,5 +33,13 @@ public interface NodeRMIInterface extends Remote{
 	
 	public void reportJoinFinished() throws RemoteException;
 	
+	public void reportLeaving() throws RemoteException;
+	
 	public void newLamportMsg(int srcId, String tag, int srcClk) throws RemoteException;
+	
+	public void obtainKeys(HashMap<Integer, String> newKeys) throws RemoteException;
+	
+	public void deleteNode(Node goneNode) throws RemoteException;
+	
+	public void reportLeaveFinished() throws RemoteException;
 }
