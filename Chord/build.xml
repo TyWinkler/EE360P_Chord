@@ -22,16 +22,27 @@
 	</target>
 	
 	<target name="dist" depends="compile">
+		
 		<mkdir dir="${dist.dir}"/>
+		
+		<!-- Creates properly formatted manifest value -->
+		<manifestclasspath property="mf.classpath" jarfile="${dist.jarfile}">
+		    <classpath>
+		    	<fileset dir="lib" includes="*.jar"/>
+			</classpath>
+		</manifestclasspath>
+		
 		<jar jarfile="${dist.jarfile}" basedir="${build.dir}">
 			<manifest>
 				<attribute name="Main-Class" value="${pkg.name}.Chord"/>
+				<attribute name="Class-Path" value="${mf.classpath}"/>
 			</manifest>
 		</jar>
+		
 	</target>
 	
 	<target name="run" depends="dist">
-		<java executable="${dist.jarfile}">
+		<java jar="${dist.jarfile}" fork="true">
 			<arg value="${arg0}"/>
 			<arg value="${arg1}"/>
 			<arg value="${arg2}"/>
